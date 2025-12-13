@@ -2,7 +2,7 @@
 streamlit==1.29.0
 
 # OpenAI API
-openai==1.6.1
+openai==1.54.0
 
 # PDF Processing
 PyMuPDF==1.23.8
