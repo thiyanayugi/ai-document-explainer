@@ -94,6 +94,7 @@ def extract_text_from_pdf(pdf_bytes):
         str: Extracted text from all pages
     """
     extracted_text = []
+    ocr_pages = []
     
     try:
         # Open PDF with PyMuPDF
@@ -107,7 +108,7 @@ def extract_text_from_pdf(pdf_bytes):
             
             # If page has no selectable text, use OCR
             if not text.strip():
-                st.info(f"Page {page_num + 1} has no selectable text. Applying OCR...")
+                ocr_pages.append(page_num + 1)
                 
                 # Convert page to image
                 pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))  # 2x zoom for better OCR
@@ -120,6 +121,10 @@ def extract_text_from_pdf(pdf_bytes):
             extracted_text.append(text)
         
         pdf_document.close()
+        
+        # Show OCR summary if any pages needed OCR
+        if ocr_pages:
+            st.info(f"Applied OCR to {len(ocr_pages)} page(s): {', '.join(map(str, ocr_pages))}")
         
     except Exception as e:
         st.error(f"Error extracting text from PDF: {str(e)}")
@@ -432,8 +437,7 @@ def main():
                 type="password",
                 help="Enter your OpenAI API key. Set OPENAI_API_KEY environment variable to avoid entering it each time."
             )
-        else:
-            st.success("✅ API Key loaded from environment")
+        # Removed success message for cleaner UI
         
         st.divider()
         
