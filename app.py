@@ -45,6 +45,17 @@ def init_session_state():
         st.session_state.engine = engine
         st.session_state.Session = Session
         st.session_state.db_initialized = True
+    
+    # Initialize chat history
+    if 'chat_history' not in st.session_state:
+        st.session_state.chat_history = []
+    
+    # Initialize document context
+    if 'current_document_text' not in st.session_state:
+        st.session_state.current_document_text = None
+    
+    if 'current_analysis' not in st.session_state:
+        st.session_state.current_analysis = None
 
 
 def validate_file(uploaded_file):
@@ -162,7 +173,9 @@ Rules:
 - Do NOT invent facts or information not present in the document
 - If information is unclear or not mentioned, use "unknown" or "not specified"
 - Keep explanations concise and avoid legal jargon
-- Focus on what matters to the document recipient"""
+- Focus on what matters to the document recipient
+- If the document is in German, provide analysis in English but preserve German terms where important
+- Recognize German date formats (DD.MM.YYYY) and German legal terminology"""
 
         user_prompt = f"""Analyze the following document and provide a structured analysis in JSON format.
 
@@ -231,6 +244,71 @@ Return ONLY a valid JSON object with this exact structure:
     
     except Exception as e:
         st.error(f"Error analyzing document: {str(e)}")
+        return None
+
+
+def chat_with_document(question, document_text, analysis, api_key):
+    """
+    Chat with the AI about the analyzed document.
+    
+    Args:
+        question: User's question
+        document_text: Original extracted text
+        analysis: Previous analysis results
+        api_key: OpenAI API key
+        
+    Returns:
+        str: AI response
+    """
+    try:
+        client = OpenAI(api_key=api_key)
+        
+        # Build context from analysis
+        context = f"""Document Summary: {analysis.get('summary', 'N/A')}
+
+Important Points:
+{chr(10).join(f'- {p}' for p in analysis.get('important_points', []))}
+
+Deadlines:
+{chr(10).join(f'- {d}' for d in analysis.get('deadlines', []))}
+
+Obligations:
+{chr(10).join(f'- {o}' for o in analysis.get('obligations', []))}
+
+Risks:
+{chr(10).join(f'- {r}' for r in analysis.get('risks', []))}
+
+Original Document Text (first 3000 chars):
+{document_text[:3000]}"""
+
+        messages = [
+            {"role": "system", "content": "You are a helpful document assistant. Answer questions about the analyzed document clearly and concisely. If the document is in German, you can respond in English but preserve important German terms. Base your answers only on the provided document content."},
+            {"role": "user", "content": f"Context:\n{context}\n\nQuestion: {question}"}
+        ]
+        
+        # Add chat history
+        for msg in st.session_state.chat_history[-6:]:  # Last 3 exchanges
+            messages.append(msg)
+        
+        messages.append({"role": "user", "content": question})
+        
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=messages,
+            temperature=0.7,
+            max_tokens=500
+        )
+        
+        answer = response.choices[0].message.content
+        
+        # Update chat history
+        st.session_state.chat_history.append({"role": "user", "content": question})
+        st.session_state.chat_history.append({"role": "assistant", "content": answer})
+        
+        return answer
+        
+    except Exception as e:
+        st.error(f"Error in chat: {str(e)}")
         return None
 
 
@@ -426,6 +504,10 @@ def main():
                 analysis = analyze_document_with_llm(extracted_text, api_key)
                 
                 if analysis:
+                    # Store document context for chat
+                    st.session_state.current_document_text = extracted_text
+                    st.session_state.current_analysis = analysis
+                    
                     # Display results
                     display_analysis(analysis)
                     
@@ -444,6 +526,54 @@ def main():
                             height=300,
                             disabled=True
                         )
+                    
+                    # Chat interface
+                    st.divider()
+                    st.subheader("💬 Ask Questions About This Document")
+                    st.write("You can now ask follow-up questions about the analyzed document.")
+                    
+                    # Display chat history
+                    if st.session_state.chat_history:
+                        with st.expander("📜 Conversation History", expanded=True):
+                            for i, msg in enumerate(st.session_state.chat_history):
+                                if msg["role"] == "user":
+                                    st.markdown(f"**You:** {msg['content']}")
+                                else:
+                                    st.markdown(f"**AI:** {msg['content']}")
+                                if i < len(st.session_state.chat_history) - 1:
+                                    st.markdown("---")
+                    
+                    # Chat input
+                    col1, col2 = st.columns([5, 1])
+                    with col1:
+                        user_question = st.text_input(
+                            "Your question:",
+                            key="chat_input",
+                            placeholder="e.g., What happens if I miss the deadline?"
+                        )
+                    with col2:
+                        st.write("")  # Spacing
+                        st.write("")  # Spacing
+                        ask_button = st.button("Ask", type="primary")
+                    
+                    if ask_button and user_question:
+                        with st.spinner("Thinking..."):
+                            answer = chat_with_document(
+                                user_question,
+                                st.session_state.current_document_text,
+                                st.session_state.current_analysis,
+                                api_key
+                            )
+                            if answer:
+                                st.success("✅ Answer:")
+                                st.write(answer)
+                                st.rerun()  # Refresh to show in history
+                    
+                    # Clear chat button
+                    if st.session_state.chat_history and st.button("🗑️ Clear Chat History"):
+                        st.session_state.chat_history = []
+                        st.rerun()
+                    
                 else:
                     st.error("❌ Failed to analyze document")
 
