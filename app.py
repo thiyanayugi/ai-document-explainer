@@ -507,9 +507,7 @@ def main():
                     # Store document context for chat
                     st.session_state.current_document_text = extracted_text
                     st.session_state.current_analysis = analysis
-                    
-                    # Display results
-                    display_analysis(analysis)
+                    st.session_state.current_filename = uploaded_file.name
                     
                     # Save to database
                     session = st.session_state.Session()
@@ -517,65 +515,82 @@ def main():
                     session.close()
                     
                     st.success("💾 Analysis saved to database")
-                    
-                    # Show raw text in expander
-                    with st.expander("📄 View Raw Extracted Text", expanded=False):
-                        st.text_area(
-                            "Extracted Text",
-                            value=extracted_text,
-                            height=300,
-                            disabled=True
-                        )
-                    
-                    # Chat interface
-                    st.divider()
-                    st.subheader("💬 Ask Questions About This Document")
-                    st.write("You can now ask follow-up questions about the analyzed document.")
-                    
-                    # Display chat history
-                    if st.session_state.chat_history:
-                        with st.expander("📜 Conversation History", expanded=True):
-                            for i, msg in enumerate(st.session_state.chat_history):
-                                if msg["role"] == "user":
-                                    st.markdown(f"**You:** {msg['content']}")
-                                else:
-                                    st.markdown(f"**AI:** {msg['content']}")
-                                if i < len(st.session_state.chat_history) - 1:
-                                    st.markdown("---")
-                    
-                    # Chat input
-                    col1, col2 = st.columns([5, 1])
-                    with col1:
-                        user_question = st.text_input(
-                            "Your question:",
-                            key="chat_input",
-                            placeholder="e.g., What happens if I miss the deadline?"
-                        )
-                    with col2:
-                        st.write("")  # Spacing
-                        st.write("")  # Spacing
-                        ask_button = st.button("Ask", type="primary")
-                    
-                    if ask_button and user_question:
-                        with st.spinner("Thinking..."):
-                            answer = chat_with_document(
-                                user_question,
-                                st.session_state.current_document_text,
-                                st.session_state.current_analysis,
-                                api_key
-                            )
-                            if answer:
-                                st.success("✅ Answer:")
-                                st.write(answer)
-                                st.rerun()  # Refresh to show in history
-                    
-                    # Clear chat button
-                    if st.session_state.chat_history and st.button("🗑️ Clear Chat History"):
-                        st.session_state.chat_history = []
-                        st.rerun()
+                    st.rerun()  # Rerun to show analysis below
                     
                 else:
                     st.error("❌ Failed to analyze document")
+    
+    # Display analysis and chat if available (outside file upload block)
+    if st.session_state.current_analysis:
+        st.divider()
+        st.subheader(f"📄 Analysis: {st.session_state.get('current_filename', 'Document')}")
+        
+        # Display results
+        display_analysis(st.session_state.current_analysis)
+        
+        # Show raw text in expander
+        if st.session_state.current_document_text:
+            with st.expander("📄 View Raw Extracted Text", expanded=False):
+                st.text_area(
+                    "Extracted Text",
+                    value=st.session_state.current_document_text,
+                    height=300,
+                    disabled=True
+                )
+        
+        # Chat interface
+        st.divider()
+        st.subheader("💬 Ask Questions About This Document")
+        st.write("You can now ask follow-up questions about the analyzed document.")
+        
+        # Display chat history
+        if st.session_state.chat_history:
+            with st.expander("📜 Conversation History", expanded=True):
+                for i, msg in enumerate(st.session_state.chat_history):
+                    if msg["role"] == "user":
+                        st.markdown(f"**You:** {msg['content']}")
+                    else:
+                        st.markdown(f"**AI:** {msg['content']}")
+                    if i < len(st.session_state.chat_history) - 1:
+                        st.markdown("---")
+        
+        # Chat input
+        col1, col2 = st.columns([5, 1])
+        with col1:
+            user_question = st.text_input(
+                "Your question:",
+                key="chat_input",
+                placeholder="e.g., What happens if I miss the deadline?"
+            )
+        with col2:
+            st.write("")  # Spacing
+            st.write("")  # Spacing
+            ask_button = st.button("Ask", type="primary")
+        
+        if ask_button and user_question:
+            with st.spinner("Thinking..."):
+                answer = chat_with_document(
+                    user_question,
+                    st.session_state.current_document_text,
+                    st.session_state.current_analysis,
+                    api_key
+                )
+                if answer:
+                    st.rerun()  # Refresh to show in history
+        
+        # Action buttons
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.session_state.chat_history and st.button("🗑️ Clear Chat History"):
+                st.session_state.chat_history = []
+                st.rerun()
+        with col2:
+            if st.button("📄 Analyze New Document"):
+                st.session_state.current_analysis = None
+                st.session_state.current_document_text = None
+                st.session_state.current_filename = None
+                st.session_state.chat_history = []
+                st.rerun()
 
 
 if __name__ == "__main__":
