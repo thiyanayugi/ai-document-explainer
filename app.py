@@ -36,10 +36,6 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Set max upload size to 20MB
-import streamlit.web.server.server as server
-server.max_upload_size = 20
-
 # Constants
 MAX_FILE_SIZE_MB = 20
 MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024
