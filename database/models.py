@@ -7,7 +7,7 @@ and utilities for database initialization with support for both SQLite and Postg
 
 import os
 from datetime import datetime
-from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, JSON
+from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, JSON, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from dotenv import load_dotenv
@@ -50,6 +50,10 @@ class DocumentAnalysis(Base):
     action_items = Column(JSON, nullable=True)
     confidence = Column(String(50), nullable=True)
     
+    # R2 Storage fields
+    storage_key = Column(String(500), nullable=True)  # R2 object key
+    storage_enabled = Column(Boolean, default=False, nullable=False)  # Whether file was stored
+    
     def __repr__(self):
         return f"<DocumentAnalysis(id={self.id}, filename='{self.filename}', timestamp={self.upload_timestamp})>"
 
@@ -89,7 +93,7 @@ def init_database():
     return engine, Session
 
 
-def save_analysis(session, filename, analysis_data):
+def save_analysis(session, filename, analysis_data, storage_key=None, storage_enabled=False):
     """
     Save document analysis to database.
     
@@ -97,6 +101,8 @@ def save_analysis(session, filename, analysis_data):
         session: SQLAlchemy session
         filename: Name of the uploaded file
         analysis_data: Dictionary containing analysis results
+        storage_key: Optional R2 storage key
+        storage_enabled: Whether file was stored in R2
         
     Returns:
         DocumentAnalysis: The saved analysis object
@@ -110,7 +116,9 @@ def save_analysis(session, filename, analysis_data):
         risks=analysis_data.get('risks'),
         recommended_next_steps=analysis_data.get('recommended_next_steps'),
         action_items=analysis_data.get('action_items'),
-        confidence=analysis_data.get('confidence')
+        confidence=analysis_data.get('confidence'),
+        storage_key=storage_key,
+        storage_enabled=storage_enabled
     )
     
     session.add(analysis)
@@ -140,10 +148,15 @@ def delete_all_analyses(session):
         session: SQLAlchemy session
         
     Returns:
-        int: Number of records deleted
+        tuple: (count, storage_keys) - Number of records deleted and list of R2 storage keys
     """
-    count = session.query(DocumentAnalysis).count()
+    # Get all storage keys before deletion for R2 cleanup
+    analyses = session.query(DocumentAnalysis).all()
+    storage_keys = [a.storage_key for a in analyses if a.storage_key]
+    
+    count = len(analyses)
     session.query(DocumentAnalysis).delete()
     session.commit()
     
-    return count
+    return count, storage_keys
+

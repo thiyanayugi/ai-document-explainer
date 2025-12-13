@@ -22,6 +22,11 @@ from database.models import (
     get_all_analyses, 
     delete_all_analyses
 )
+from storage.r2 import (
+    is_storage_enabled,
+    upload_to_r2,
+    delete_multiple_from_r2
+)
 
 # Page configuration
 st.set_page_config(
@@ -451,13 +456,24 @@ def main():
             st.write(f"Total analyses: {len(analyses)}")
             
             if st.button("🗑️ Delete All History", type="secondary"):
-                count = delete_all_analyses(session)
-                st.success(f"Deleted {count} records")
+                count, storage_keys = delete_all_analyses(session)
+                
+                # Delete from R2 if storage was enabled
+                if storage_keys:
+                    deleted_count = delete_multiple_from_r2(storage_keys)
+                    st.success(f"Deleted {count} records and {deleted_count} files from storage")
+                else:
+                    st.success(f"Deleted {count} records")
                 st.rerun()
         else:
             st.write("No analysis history yet")
         
         session.close()
+        
+        # Storage status
+        if is_storage_enabled():
+            st.divider()
+            st.info("☁️ Cloud storage enabled")
     
     # Main content
     if not api_key:
@@ -470,6 +486,16 @@ def main():
         type=ALLOWED_EXTENSIONS,
         help=f"Maximum file size: {MAX_FILE_SIZE_MB} MB"
     )
+    
+    # Storage toggle (privacy-first: default OFF)
+    if is_storage_enabled():
+        store_document = st.checkbox(
+            "☁️ Store document securely in cloud for later access",
+            value=False,
+            help="Document will be encrypted and stored in Cloudflare R2. You can delete it anytime."
+        )
+    else:
+        store_document = False
     
     if uploaded_file:
         # Validate file
@@ -508,14 +534,34 @@ def main():
                 analysis = analyze_document_with_llm(extracted_text, api_key)
                 
                 if analysis:
+                    # Upload to R2 if storage is enabled and user opted in
+                    r2_key = None
+                    if store_document and is_storage_enabled():
+                        st.info("☁️ Uploading to cloud storage...")
+                        r2_key = upload_to_r2(
+                            file_bytes,
+                            uploaded_file.name,
+                            uploaded_file.type
+                        )
+                        if r2_key:
+                            st.success("✅ Document stored securely in cloud")
+                        else:
+                            st.warning("⚠️ Cloud storage upload failed, continuing without storage")
+                    
                     # Store document context for chat
                     st.session_state.current_document_text = extracted_text
                     st.session_state.current_analysis = analysis
                     st.session_state.current_filename = uploaded_file.name
                     
-                    # Save to database
+                    # Save to database with R2 key
                     session = st.session_state.Session()
-                    save_analysis(session, uploaded_file.name, analysis)
+                    save_analysis(
+                        session, 
+                        uploaded_file.name, 
+                        analysis,
+                        storage_key=r2_key,
+                        storage_enabled=store_document and r2_key is not None
+                    )
                     session.close()
                     
                     st.success("💾 Analysis saved to database")

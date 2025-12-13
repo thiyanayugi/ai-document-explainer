@@ -18,5 +18,8 @@ Pillow==10.1.0
 # Database
 sqlalchemy==2.0.23
 
+# Cloud Storage (Cloudflare R2)
+boto3==1.35.0
+
 # Environment Variables
 python-dotenv==1.0.0

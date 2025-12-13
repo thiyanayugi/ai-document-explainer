@@ -29,12 +29,54 @@ Official documents are often complex, especially for non-native speakers. This t
   - Recommended next steps
   - Actionable checklist
 - **Interactive Chat**: Ask follow-up questions about analyzed documents
+- **Optional Cloud Storage**: Cloudflare R2 integration for secure document storage
+  - Privacy-first: disabled by default
+  - Encrypted at rest (AES-256)
+  - User-controlled with toggle
+  - Auto-cleanup on delete
 - **Database Persistence**: Store analysis history (SQLite by default, PostgreSQL/Supabase ready)
 - **Privacy-Focused**:
-  - No persistent storage of raw documents
+  - No persistent storage of raw documents (unless explicitly enabled)
   - Clear privacy disclaimers
   - Delete history feature
 - **Production-Ready**: Fully containerized with Docker
+
+## ☁️ Optional Cloud Storage (Cloudflare R2)
+
+This application supports **optional** document storage using Cloudflare R2.
+
+### Features
+
+- **Privacy-First**: Storage is **disabled by default** and requires user opt-in per document
+- **Encrypted**: Files are encrypted at rest with AES-256
+- **User-Controlled**: Toggle storage on/off for each upload
+- **Retention**: Auto-delete when you delete analysis history
+- **Cost-Effective**: Cloudflare R2 free tier includes 10GB storage, 1M writes/month, no egress fees
+- **GDPR-Friendly**: EU data residency available
+
+### Setup (Optional)
+
+1. **Enable R2** in Cloudflare Dashboard
+2. **Create a bucket** (e.g., `ai-documents`)
+3. **Create API token** with Object Read/Write permissions
+4. **Set environment variables**:
+   ```bash
+   ENABLE_OBJECT_STORAGE=true
+   R2_ACCOUNT_ID=your_account_id
+   R2_ACCESS_KEY_ID=your_access_key
+   R2_SECRET_ACCESS_KEY=your_secret_key
+   R2_BUCKET_NAME=ai-documents
+   ```
+
+### Usage
+
+When R2 is enabled, you'll see a checkbox during upload:
+
+- ☁️ **Store document securely in cloud for later access**
+- Unchecked (default): Document processed and discarded
+- Checked: Document encrypted and stored in R2
+
+**Note**: By default, documents are NOT stored permanently. Storage is opt-in per document.
 
 ## 🚀 Quick Start
 
