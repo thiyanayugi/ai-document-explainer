@@ -2,14 +2,25 @@
 
 A production-ready web application that helps users understand official documents by extracting text and providing AI-powered analysis with clear explanations, deadlines, obligations, risks, and actionable next steps.
 
+## 💡 Why This Project Exists
+
+Official documents are often complex, especially for non-native speakers. This tool helps users quickly understand what a document means, what actions are required, and what deadlines they must not miss.
+
+## 👥 Who Is This For?
+
+- **International students** dealing with university or visa documents
+- **Immigrants and expats** navigating official correspondence
+- **Freelancers and contractors** reviewing contracts and agreements
+- **Anyone** receiving complex official or legal documents
+
 ## 🎯 Features
 
 - **Multi-format Support**: Upload PDFs, PNG, JPG, JPEG, or TIFF files
 - **Smart Text Extraction**:
   - PyMuPDF for PDF text extraction
   - Automatic OCR fallback for scanned documents using Tesseract
-  - Support for English and German languages
-- **AI-Powered Analysis**: OpenAI GPT-4 analyzes documents and provides:
+  - OCR supports English and German text
+- **AI-Powered Analysis**: OpenAI GPT-4o-mini analyzes documents and provides:
   - Clear summary in simple English
   - Important points and key information
   - Deadlines and time-sensitive items
@@ -17,9 +28,10 @@ A production-ready web application that helps users understand official document
   - Potential risks and consequences
   - Recommended next steps
   - Actionable checklist
+- **Interactive Chat**: Ask follow-up questions about analyzed documents
 - **Database Persistence**: Store analysis history (SQLite by default, PostgreSQL/Supabase ready)
 - **Privacy-Focused**:
-  - No raw document logging
+  - No persistent storage of raw documents
   - Clear privacy disclaimers
   - Delete history feature
 - **Production-Ready**: Fully containerized with Docker
@@ -132,9 +144,9 @@ DATABASE_URL=sqlite:///./documents.db  # Default SQLite
 
 - **Frontend & Backend**: Streamlit
 - **Language**: Python 3.11+
-- **LLM**: OpenAI GPT-4o-mini
+- **LLM**: OpenAI GPT-4o-mini (configurable)
 - **PDF Processing**: PyMuPDF (fitz)
-- **OCR**: Tesseract OCR
+- **OCR**: Tesseract OCR (English + German)
 - **Database**: SQLAlchemy ORM (SQLite/PostgreSQL)
 - **Containerization**: Docker
 
@@ -153,7 +165,15 @@ ai_document_reader/
     └── models.py        # SQLAlchemy models
 ```
 
-## 🔒 Privacy & Security
+## � Cost Considerations
+
+- Each document analysis uses an OpenAI API call
+- Costs depend on document length and complexity
+- **Typical cost**: $0.01 - $0.05 per document (a few cents)
+- Chat follow-up questions incur additional minimal costs
+- Monitor usage via OpenAI dashboard
+
+## �🔒 Privacy & Security
 
 ### What We Do
 
@@ -166,13 +186,17 @@ ai_document_reader/
 ### What We Don't Do
 
 - ❌ Log raw document content
-- ❌ Store uploaded files on disk
+- ❌ Persist uploaded files beyond the current session
 - ❌ Hardcode API keys or secrets
 - ❌ Share data with third parties (except OpenAI for analysis)
 
 ### Important Notice
 
 **Document text is sent to OpenAI's API for analysis.** While we don't log the raw content, it is processed by OpenAI according to their [privacy policy](https://openai.com/policies/privacy-policy). Do not upload documents containing highly sensitive personal information unless you accept this risk.
+
+## ⚖️ Legal Disclaimer
+
+**This application does not provide legal advice.** AI-generated explanations are informational only and may be incomplete or inaccurate. Always consult a qualified professional for legal decisions.
 
 ## 📊 Database
 
@@ -201,8 +225,9 @@ DATABASE_URL=postgresql://user:password@db.supabase.co:5432/postgres
 1. Upload a PDF document (e.g., rental contract, government letter)
 2. Wait for text extraction and OCR (if needed)
 3. Review the AI analysis
-4. Check the action items and deadlines
-5. View raw extracted text in the collapsible section
+4. Ask follow-up questions using the chat interface
+5. Check the action items and deadlines
+6. View raw extracted text in the collapsible section
 
 ### Verify Docker Deployment
 
@@ -213,8 +238,9 @@ docker build -t ai-doc-explainer .
 # Run
 docker run -e OPENAI_API_KEY=your_key -p 8501:8501 ai-doc-explainer
 
-# Test
-curl http://localhost:8501/_stcore/health
+# Test (verify app loads in browser)
+# Note: Streamlit health endpoint availability is version-dependent
+open http://localhost:8501
 ```
 
 ## 🚧 Future Improvements
@@ -228,10 +254,11 @@ curl http://localhost:8501/_stcore/health
 - [ ] Document comparison feature
 - [ ] Email notifications for deadlines
 - [ ] Integration with calendar apps
+- [ ] Multilingual AI output (currently English only)
 
 ## 📝 License
 
-This project is provided as-is for educational and commercial use.
+MIT License
 
 ## 🤝 Contributing
 
