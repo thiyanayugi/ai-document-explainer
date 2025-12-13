@@ -1,25 +1,41 @@
 # AI Document Explainer - Project Description
 
-## One-Paragraph Description (LinkedIn/GitHub)
+## 📄 One-Paragraph Description
 
-**AI Document Explainer** is a production-ready web application that helps international students, expats, and anyone dealing with complex official documents understand what they mean and what actions are required. Built with Python, Streamlit, and OpenAI GPT-4o-mini, it automatically extracts text from PDFs and images (with OCR support for scanned documents), analyzes the content, and provides clear explanations of deadlines, obligations, risks, and next steps in simple English. The app includes an interactive chat interface for follow-up questions, supports German documents, and is fully containerized with Docker for easy deployment. Perfect for portfolio projects demonstrating full-stack AI development, production-grade architecture, and real-world problem-solving.
+**AI Document Explainer** is an open-source web application that helps international students, immigrants, and expats understand complex official documents in foreign languages. Using GPT-4 and OCR technology, it extracts text from PDFs and images, provides clear summaries in plain language, identifies deadlines and obligations, highlights potential risks, and answers follow-up questions through an interactive chat interface. Built with privacy-first principles, the tool processes documents locally and offers optional encrypted cloud storage, making it ideal for anyone navigating bureaucracy in a new country.
 
----
+## 🎯 Elevator Pitch (30 seconds)
 
-## Elevator Pitch (30 seconds)
-
-"Have you ever received an official document and struggled to understand what it means or what you need to do? AI Document Explainer solves this problem. Upload any PDF or image—rental contracts, visa letters, insurance notices—and get an instant AI-powered breakdown: deadlines, obligations, risks, and action items in plain English. You can even ask follow-up questions. It's production-ready, privacy-focused, and costs just pennies per document."
+"Moving to a new country means dealing with tons of official documents in a language you might not fully understand. AI Document Explainer uses GPT-4 to break down complex legal documents—rental contracts, visa papers, university forms—into simple, actionable insights. Upload a document, get a clear summary, see your deadlines, understand your obligations, and ask follow-up questions. It's like having a helpful friend who speaks the language and knows the system. Built for international students, immigrants, and expats who deserve to understand the paperwork that affects their lives."
 
 ---
 
-## Key Selling Points for Interviews
+## 💼 Interview Talking Points
 
-1. **Real-world problem**: Addresses a genuine pain point for millions of people
-2. **Production-grade**: Docker containerization, database persistence, proper error handling
-3. **Full-stack AI**: Combines OCR, LLM integration, chat interface, and web development
-4. **Privacy-conscious**: Clear disclaimers, no persistent storage, GDPR-aware design
-5. **Cost-transparent**: Honest about API costs and usage
-6. **Scalable**: SQLite → PostgreSQL migration path, ready for multi-user deployment
+### Technical Implementation
+
+- **"I built this using GPT-4o-mini for cost-effective document analysis, combined with Tesseract OCR for multi-language text extraction"**
+- **"The architecture uses Docker for containerization, Streamlit for the UI, and supports deployment to Google Cloud Run with auto-scaling"**
+- **"I implemented IP-based rate limiting with 24-hour time windows to prevent API abuse while keeping costs predictable"**
+- **"For storage, I integrated Cloudflare R2 with a privacy-first approach—storage is opt-in per document with AES-256 encryption"**
+
+### Problem-Solving
+
+- **"I identified a real pain point: international students and immigrants struggling to understand official documents in foreign languages"**
+- **"The challenge was balancing AI power with cost control, so I chose GPT-4o-mini and implemented smart rate limiting"**
+- **"I designed the system to be privacy-conscious by default—documents aren't stored unless users explicitly opt-in"**
+
+### Impact & Scale
+
+- **"This tool can help millions of international students, immigrants, and expats worldwide navigate bureaucracy in new countries"**
+- **"The cost structure makes it sustainable: ~$0.01-0.05 per document analysis, with Google Cloud Run's free tier covering 2M requests/month"**
+- **"I built it to be production-ready from day one—fully containerized, auto-scaling, with monitoring and health checks"**
+
+### Future Vision
+
+- **"Next steps include adding more OCR languages, implementing document comparison features, and building a mobile app"**
+- **"I'm exploring partnerships with international student organizations and immigration support groups"**
+- **"The goal is to make this a go-to tool for anyone dealing with official documents in a foreign language"**
 
 ---
 
