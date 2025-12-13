@@ -27,6 +27,13 @@ from storage.r2 import (
     upload_to_r2,
     delete_multiple_from_r2
 )
+from rate_limiter import (
+    check_rate_limit,
+    increment_rate_limit,
+    get_usage_stats,
+    ANALYSIS_LIMIT,
+    CHAT_LIMIT
+)
 
 # Page configuration
 st.set_page_config(
@@ -61,32 +68,6 @@ def init_session_state():
     
     if 'current_analysis' not in st.session_state:
         st.session_state.current_analysis = None
-    
-    # Rate limiting
-    if 'analysis_count' not in st.session_state:
-        st.session_state.analysis_count = 0
-    
-    if 'chat_count' not in st.session_state:
-        st.session_state.chat_count = 0
-
-
-# Rate limit constants
-MAX_ANALYSES_PER_SESSION = 10
-MAX_CHATS_PER_SESSION = 20
-
-
-def check_analysis_rate_limit():
-    """Check if user has exceeded analysis rate limit."""
-    if st.session_state.analysis_count >= MAX_ANALYSES_PER_SESSION:
-        return False, f"Rate limit exceeded. Maximum {MAX_ANALYSES_PER_SESSION} analyses per session."
-    return True, ""
-
-
-def check_chat_rate_limit():
-    """Check if user has exceeded chat rate limit."""
-    if st.session_state.chat_count >= MAX_CHATS_PER_SESSION:
-        return False, f"Rate limit exceeded. Maximum {MAX_CHATS_PER_SESSION} questions per session."
-    return True, ""
 
 
 def validate_file(uploaded_file):
@@ -503,11 +484,12 @@ def main():
         
         # Usage counter
         st.divider()
-        st.caption("📊 Session Usage")
-        analyses_left = MAX_ANALYSES_PER_SESSION - st.session_state.analysis_count
-        chats_left = MAX_CHATS_PER_SESSION - st.session_state.chat_count
-        st.write(f"Analyses: {st.session_state.analysis_count}/{MAX_ANALYSES_PER_SESSION}")
-        st.write(f"Chat questions: {st.session_state.chat_count}/{MAX_CHATS_PER_SESSION}")
+        st.caption("📊 Usage Limits (24h)")
+        stats = get_usage_stats()
+        st.write(f"Analyses: {stats['analysis_count']}/{ANALYSIS_LIMIT}")
+        st.write(f"Chat questions: {stats['chat_count']}/{CHAT_LIMIT}")
+        if stats['analysis_remaining'] <= 2 or stats['chat_remaining'] <= 5:
+            st.warning("⚠️ Approaching limit")
     
     # Main content
     if not api_key:
@@ -545,10 +527,9 @@ def main():
         # Process button
         if st.button("🚀 Analyze Document", type="primary"):
             # Check rate limit
-            can_analyze, error_msg = check_analysis_rate_limit()
+            can_analyze, remaining, error_msg = check_rate_limit('analysis')
             if not can_analyze:
                 st.error(f"⚠️ {error_msg}")
-                st.info("💡 Refresh the page to reset your session limits.")
                 st.stop()
             
             with st.spinner("Processing document..."):
@@ -598,8 +579,8 @@ def main():
                     )
                     session.close()
                     
-                    # Increment analysis counter
-                    st.session_state.analysis_count += 1
+                    # Increment rate limit counter
+                    increment_rate_limit('analysis')
                     
                     st.rerun()  # Rerun to show analysis below
                     
@@ -655,10 +636,9 @@ def main():
         
         if ask_button and user_question:
             # Check rate limit
-            can_chat, error_msg = check_chat_rate_limit()
+            can_chat, remaining, error_msg = check_rate_limit('chat')
             if not can_chat:
                 st.error(f"⚠️ {error_msg}")
-                st.info("💡 Refresh the page to reset your session limits.")
             else:
                 with st.spinner("Thinking..."):
                     answer = chat_with_document(
@@ -668,8 +648,8 @@ def main():
                         api_key
                     )
                     if answer:
-                        # Increment chat counter
-                        st.session_state.chat_count += 1
+                        # Increment rate limit counter
+                        increment_rate_limit('chat')
                         st.rerun()  # Refresh to show in history
         
         # Action buttons

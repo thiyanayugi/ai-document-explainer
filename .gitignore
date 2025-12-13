@@ -49,3 +49,4 @@ documents.db
 
 # Logs
 *.log
+.rate_limits.json
