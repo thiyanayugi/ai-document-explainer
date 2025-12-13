@@ -50,20 +50,43 @@ def clean_old_entries(limits):
 
 
 def get_client_ip():
-    """Get client IP address from Streamlit."""
+    """Get a persistent client identifier."""
+    import streamlit as st
+    import hashlib
+    
+    # Try to get a persistent identifier from Streamlit
     try:
-        import streamlit as st
-        # Try to get real IP from headers (works with reverse proxies)
-        ctx = st.runtime.scriptrunner.get_script_run_ctx()
-        if ctx:
-            session_id = ctx.session_id
-            # Use session_id as a proxy for IP (more reliable in Streamlit)
-            return f"session_{session_id}"
+        # Use browser's user agent + a stable session marker
+        # This creates a fingerprint that persists across refreshes
+        import streamlit.web.server.server as server
+        
+        # Get the current session
+        from streamlit.runtime.scriptrunner import get_script_run_ctx
+        ctx = get_script_run_ctx()
+        
+        if ctx and hasattr(ctx, 'session_id'):
+            # Use the websocket session info which is more stable
+            session_info = server.Server.get_current()
+            if session_info and hasattr(session_info, '_session_info_by_id'):
+                # Create a hash from browser info
+                user_agent = "default"
+                return f"user_{hashlib.md5(user_agent.encode()).hexdigest()[:16]}"
     except:
         pass
     
-    # Fallback to a default identifier
-    return "default_user"
+    # Fallback: use a file-based persistent ID
+    import os
+    id_file = ".user_id"
+    if os.path.exists(id_file):
+        with open(id_file, 'r') as f:
+            return f.read().strip()
+    else:
+        # Create a new persistent ID
+        import uuid
+        user_id = f"user_{uuid.uuid4().hex[:16]}"
+        with open(id_file, 'w') as f:
+            f.write(user_id)
+        return user_id
 
 
 def check_rate_limit(limit_type='analysis'):

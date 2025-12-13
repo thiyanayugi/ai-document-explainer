@@ -50,3 +50,4 @@ documents.db
 # Logs
 *.log
 .rate_limits.json
+.user_id
