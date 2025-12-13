@@ -26,17 +26,22 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Expose Streamlit default port
-EXPOSE 8501
-
 # Set environment variables
 ENV STREAMLIT_SERVER_PORT=8501
 ENV STREAMLIT_SERVER_ADDRESS=0.0.0.0
 ENV STREAMLIT_SERVER_HEADLESS=true
 ENV STREAMLIT_BROWSER_GATHER_USAGE_STATS=false
+# Expose port (Cloud Run will set PORT env var)
+EXPOSE 8080
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl --fail http://localhost:8501/_stcore/health || exit 1
+    CMD curl -f http://localhost:${PORT:-8080}/_stcore/health || exit 1
 
 # Run the application
-CMD ["streamlit", "run", "app.py"]
+CMD streamlit run app.py \
+    --server.port=${PORT:-8080} \
+    --server.address=0.0.0.0 \
+    --server.headless=true \
+    --browser.serverAddress=0.0.0.0 \
+    --browser.gatherUsageStats=false
