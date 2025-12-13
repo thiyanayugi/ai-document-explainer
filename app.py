@@ -517,36 +517,29 @@ def main():
                 file_bytes = uploaded_file.read()
                 
                 if file_extension == 'pdf':
-                    st.info("📖 Extracting text from PDF...")
                     extracted_text = extract_text_from_pdf(file_bytes)
                 else:
-                    st.info("🖼️ Extracting text from image using OCR...")
                     extracted_text = extract_text_from_image(file_bytes)
                 
                 if not extracted_text.strip():
                     st.error("❌ No text could be extracted from the document")
                     st.stop()
                 
-                st.success(f"✅ Extracted {len(extracted_text)} characters")
-                
                 # Analyze with LLM
-                st.info("🤖 Analyzing document with AI...")
-                analysis = analyze_document_with_llm(extracted_text, api_key)
+                with st.spinner("🤖 Analyzing document with AI..."):
+                    analysis = analyze_document_with_llm(extracted_text, api_key)
                 
                 if analysis:
                     # Upload to R2 if storage is enabled and user opted in
                     r2_key = None
                     if store_document and is_storage_enabled():
-                        st.info("☁️ Uploading to cloud storage...")
                         r2_key = upload_to_r2(
                             file_bytes,
                             uploaded_file.name,
                             uploaded_file.type
                         )
-                        if r2_key:
-                            st.success("✅ Document stored securely in cloud")
-                        else:
-                            st.warning("⚠️ Cloud storage upload failed, continuing without storage")
+                        if not r2_key:
+                            st.warning("⚠️ Cloud storage upload failed")
                     
                     # Store document context for chat
                     st.session_state.current_document_text = extracted_text
@@ -563,8 +556,6 @@ def main():
                         storage_enabled=store_document and r2_key is not None
                     )
                     session.close()
-                    
-                    st.success("💾 Analysis saved to database")
                     st.rerun()  # Rerun to show analysis below
                     
                 else:
