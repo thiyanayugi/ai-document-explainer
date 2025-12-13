@@ -6,7 +6,9 @@
 [![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](https://www.docker.com/)
 [![Cloud Run](https://img.shields.io/badge/Google%20Cloud-Run-4285F4.svg)](https://cloud.google.com/run)
 
-**Live Demo**: [Coming Soon]
+**🚀 Live Demo**: [https://ai-doc-explainer-49617484596.europe-west3.run.app/](https://ai-doc-explainer-49617484596.europe-west3.run.app/)
+
+**💾 Cloud Storage**: Powered by [Cloudflare R2](https://www.cloudflare.com/products/r2/) - Privacy-first, encrypted document storage with zero egress fees
 
 ---
 
