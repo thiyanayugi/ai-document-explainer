@@ -197,7 +197,7 @@ Rules:
         user_prompt = f"""Analyze the following document and provide a structured analysis in JSON format.
 
 Document text:
-{text[:100000]}  
+{text[:200000]}  
 
 Return ONLY a valid JSON object with this exact structure:
 {{
